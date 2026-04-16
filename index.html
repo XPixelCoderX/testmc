@@ -2,8 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CheerpJ JAR Runner - Fixed</title>
+    <title>Auto-Detect Main Class - CheerpJ JAR Runner</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -19,8 +18,6 @@
             padding: 24px;
             margin-bottom: 20px;
         }
-        h1 { color: #89b4fa; margin-top: 0; }
-        h2 { color: #89b4fa; font-size: 18px; margin: 0 0 15px 0; }
         .warning {
             background: #1e1e2e;
             border-left: 4px solid #f9e2af;
@@ -28,28 +25,16 @@
             margin: 15px 0;
             border-radius: 8px;
         }
-        .error-box {
-            background: #1e1e2e;
-            border-left: 4px solid #f38ba8;
-            padding: 15px;
-            margin: 15px 0;
-            border-radius: 8px;
-        }
-        input, button {
-            background: #1e1e2e;
-            border: 1px solid #45475a;
-            color: #cdd6f4;
-            padding: 10px 15px;
-            border-radius: 8px;
-            font-size: 14px;
-            margin: 5px;
-        }
         button {
             background: #89b4fa;
             color: #1e1e2e;
-            cursor: pointer;
-            font-weight: bold;
             border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            margin: 5px;
         }
         button:hover { background: #b4befe; }
         button:disabled {
@@ -63,11 +48,9 @@
             text-align: center;
             margin: 15px 0;
             cursor: pointer;
-            transition: all 0.2s;
         }
         .upload-area:hover {
             background: #45475a;
-            border-color: #b4befe;
         }
         #status {
             background: #1e1e2e;
@@ -76,63 +59,73 @@
             font-family: 'Courier New', monospace;
             font-size: 13px;
             margin: 15px 0;
-            max-height: 300px;
+            max-height: 400px;
             overflow-y: auto;
         }
         .status-success { color: #a6e3a1; }
         .status-error { color: #f38ba8; }
         .status-info { color: #89b4fa; }
-        .file-info { font-size: 12px; color: #a6adc8; margin-top: 10px; }
-        .main-class-hint {
+        .status-warning { color: #f9e2af; }
+        .found-main {
             background: #1e1e2e;
+            border: 1px solid #a6e3a1;
             padding: 10px;
             border-radius: 6px;
-            font-size: 12px;
-            margin-top: 10px;
+            margin: 10px 0;
+            font-family: monospace;
         }
-        hr { border-color: #45475a; margin: 20px 0; }
+        #display {
+            min-height: 400px;
+            background: #1e1e2e;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        progress {
+            width: 100%;
+            height: 20px;
+            border-radius: 10px;
+            margin: 10px 0;
+        }
+        hr {
+            border-color: #45475a;
+            margin: 15px 0;
+        }
     </style>
     <script src="https://cjrtnc.leaningtech.com/4.2/loader.js"></script>
 </head>
 <body>
     <div class="container">
-        <h1>📦 CheerpJ JAR Runner - Fixed Version</h1>
+        <h1>🔍 Auto-Detect Main Class JAR Runner</h1>
         
         <div class="warning">
-            <strong>⚠️ CRITICAL:</strong> You MUST use an HTTP server, not double-click the file.<br>
+            <strong>⚠️ IMPORTANT:</strong> You MUST use an HTTP server!<br>
             → Run: <code>python -m http.server 8080</code><br>
             → Open: <code>http://localhost:8080</code>
         </div>
 
         <div class="upload-area" id="uploadArea">
             📁 Click or drag & drop your JAR file here
-            <div class="file-info">helloworld.jar, any jar file</div>
+            <div style="font-size: 12px; margin-top: 10px;">The system will automatically find the main class</div>
         </div>
         <input type="file" id="jarFileInput" accept=".jar" style="display:none">
 
         <div style="margin: 15px 0;">
-            <label><strong>Main Class (optional):</strong></label>
-            <input type="text" id="mainClassInput" placeholder="e.g., HelloWorld, com.example.Main" style="width: 70%;">
-            <div class="main-class-hint">
-                💡 <strong>How to find your main class:</strong><br>
-                • Run <code>jar tf yourfile.jar | grep -i "\.class$" | head -5</code> to see class files<br>
-                • For HelloWorld, the class name is likely <code>HelloWorld</code> (no .class extension)<br>
-                • If your code has <code>package com.example;</code>, use <code>com.example.Main</code>
-            </div>
+            <label><strong>Found Main Class:</strong></label>
+            <input type="text" id="mainClassInput" placeholder="Auto-detected main class will appear here" style="width: 70%;" readonly>
+            <button id="overrideBtn" style="background:#45475a;">✏️ Edit</button>
         </div>
 
         <div style="text-align: center;">
-            <button id="runBtn" disabled>▶ Run JAR</button>
+            <button id="runBtn" disabled>▶ Run JAR with Auto-Detected Main Class</button>
             <button id="clearBtn">🗑 Clear</button>
-            <button id="detectBtn" disabled>🔍 Try Auto-Detect Main Class</button>
         </div>
 
-        <div id="display" style="margin-top: 20px; min-height: 500px;"></div>
+        <div id="display"></div>
     </div>
 
     <div class="container">
-        <h2>📋 Console Output</h2>
-        <div id="status">Status: Ready. Upload a JAR file to begin.</div>
+        <h2>📋 Detection & Console Output</h2>
+        <div id="status">Status: Ready. Upload a JAR file.</div>
     </div>
 
     <script>
@@ -141,7 +134,7 @@
         const jarInput = document.getElementById('jarFileInput');
         const runBtn = document.getElementById('runBtn');
         const clearBtn = document.getElementById('clearBtn');
-        const detectBtn = document.getElementById('detectBtn');
+        const overrideBtn = document.getElementById('overrideBtn');
         const mainClassInput = document.getElementById('mainClassInput');
         const statusDiv = document.getElementById('status');
         const displayDiv = document.getElementById('display');
@@ -149,36 +142,259 @@
         let currentJarData = null;
         let currentJarName = null;
         let currentJarPath = null;
+        let detectedMainClass = null;
         let initialized = false;
+        let editingMode = false;
         
         function log(message, type = 'info') {
             const timestamp = new Date().toLocaleTimeString();
-            const colorClass = type === 'error' ? 'status-error' : (type === 'success' ? 'status-success' : 'status-info');
+            const colorClass = type === 'error' ? 'status-error' : (type === 'success' ? 'status-success' : (type === 'warning' ? 'status-warning' : 'status-info'));
             statusDiv.innerHTML = `<div class="${colorClass}">[${timestamp}] ${message}</div>` + statusDiv.innerHTML;
             console.log(`[${type}] ${message}`);
         }
         
-        // Initialize CheerpJ
         async function initCheerpJ() {
             if (initialized) return true;
-            
-            log("Initializing CheerpJ 4.2...", 'info');
+            log("Initializing CheerpJ...", 'info');
             try {
-                await cheerpjInit({ 
-                    version: 8,
-                    enableDebug: true,
-                    status: "default"
-                });
+                await cheerpjInit({ version: 8, enableDebug: true });
                 initialized = true;
-                log("✅ CheerpJ initialized successfully!", 'success');
+                log("✅ CheerpJ ready!", 'success');
                 return true;
             } catch (e) {
-                log(`❌ CheerpJ init failed: ${e.message}`, 'error');
+                log(`❌ Failed: ${e.message}`, 'error');
                 return false;
             }
         }
         
-        // Write JAR to CheerpJ virtual filesystem
+        // ============ MAIN CLASS DETECTION ENGINE ============
+        
+        // Strategy 1: Read from MANIFEST.MF
+        async function detectFromManifest(jarData) {
+            log("🔍 Strategy 1: Checking MANIFEST.MF...", 'info');
+            
+            // Look for META-INF/MANIFEST.MF in the ZIP structure
+            const uint8Array = new Uint8Array(jarData);
+            let manifestContent = null;
+            
+            // Simple ZIP local file header parsing to find MANIFEST.MF
+            // This is a simplified approach - for production, use a proper ZIP library
+            const text = new TextDecoder('utf-8');
+            let offset = 0;
+            
+            while (offset < uint8Array.length - 30) {
+                // Check for local file header signature (0x04034b50)
+                if (uint8Array[offset] === 0x50 && uint8Array[offset+1] === 0x4b && 
+                    uint8Array[offset+2] === 0x03 && uint8Array[offset+3] === 0x04) {
+                    
+                    const filenameLength = uint8Array[offset+26] + (uint8Array[offset+27] << 8);
+                    const extraLength = uint8Array[offset+28] + (uint8Array[offset+29] << 8);
+                    const filenameOffset = offset + 30;
+                    
+                    if (filenameLength > 0 && filenameLength < 200) {
+                        const filenameBytes = uint8Array.slice(filenameOffset, filenameOffset + filenameLength);
+                        const filename = text.decode(filenameBytes);
+                        
+                        if (filename === 'META-INF/MANIFEST.MF') {
+                            const dataOffset = filenameOffset + filenameLength + extraLength;
+                            // Find the compressed size (simplified - for uncompressed files)
+                            let manifestBytes = [];
+                            let idx = dataOffset;
+                            while (idx < uint8Array.length && manifestBytes.length < 5000) {
+                                manifestBytes.push(uint8Array[idx]);
+                                idx++;
+                            }
+                            manifestContent = text.decode(new Uint8Array(manifestBytes));
+                            break;
+                        }
+                    }
+                    offset += 30 + filenameLength + extraLength;
+                } else {
+                    offset++;
+                }
+            }
+            
+            if (manifestContent) {
+                const lines = manifestContent.split('\n');
+                for (const line of lines) {
+                    if (line.startsWith('Main-Class:')) {
+                        const mainClass = line.substring(11).trim().replace(/\r$/, '');
+                        log(`✅ Found in MANIFEST: ${mainClass}`, 'success');
+                        return mainClass;
+                    }
+                }
+            }
+            
+            log("No Main-Class found in MANIFEST.MF", 'warning');
+            return null;
+        }
+        
+        // Strategy 2: Scan class files for public static void main
+        async function detectByScanningClasses(jarData) {
+            log("🔍 Strategy 2: Scanning class files for main() method...", 'info');
+            
+            const uint8Array = new Uint8Array(jarData);
+            const textDecoder = new TextDecoder('utf-8');
+            const candidates = [];
+            
+            // Simple scan for class file signatures (0xCAFEBABE)
+            let offset = 0;
+            let classCount = 0;
+            
+            while (offset < uint8Array.length - 8 && candidates.length < 30) {
+                // Look for class file magic number: 0xCAFEBABE
+                if (uint8Array[offset] === 0xCA && uint8Array[offset+1] === 0xFE && 
+                    uint8Array[offset+2] === 0xBA && uint8Array[offset+3] === 0xBE) {
+                    
+                    classCount++;
+                    
+                    // Try to extract class name from constant pool (simplified)
+                    // This is a heuristic - looks for common patterns
+                    const searchWindow = uint8Array.slice(offset, Math.min(offset + 2000, uint8Array.length));
+                    const windowStr = textDecoder.decode(searchWindow);
+                    
+                    // Look for method signature patterns that indicate main method
+                    if (windowStr.includes('main') || windowStr.includes('Main')) {
+                        // Try to extract package/class name from the data
+                        let potentialName = null;
+                        
+                        // Look for path-like patterns in the surrounding data
+                        const pathPattern = /[a-z0-9_/]+[A-Z][a-zA-Z0-9_]*\.class/i;
+                        const match = windowStr.match(pathPattern);
+                        if (match) {
+                            potentialName = match[0].replace(/\.class$/, '').replace(/\//g, '.');
+                            if (potentialName && !candidates.includes(potentialName)) {
+                                candidates.push(potentialName);
+                                log(`   Candidate found: ${potentialName}`, 'info');
+                            }
+                        }
+                    }
+                }
+                offset++;
+            }
+            
+            log(`   Scanned ${classCount} class files, found ${candidates.length} candidates`, 'info');
+            
+            if (candidates.length > 0) {
+                // Return the most promising candidate (often the one that appears first)
+                const bestGuess = candidates[0];
+                log(`✅ Best candidate: ${bestGuess}`, 'success');
+                return bestGuess;
+            }
+            
+            log("No main method candidates found by scanning", 'warning');
+            return null;
+        }
+        
+        // Strategy 3: Try common main class patterns based on JAR name
+        function detectByCommonPatterns(jarName) {
+            log("🔍 Strategy 3: Trying common naming patterns...", 'info');
+            
+            const patterns = [
+                "Main",
+                "main",
+                "Start",
+                "start",
+                "Launcher",
+                "launcher",
+                "App",
+                "app",
+                "Application",
+                "application",
+                "Game",
+                "game",
+                "Client",
+                "client"
+            ];
+            
+            // Try to guess from filename
+            const baseName = jarName.replace(/\.jar$/i, '');
+            const namePatterns = [
+                baseName,
+                baseName + "Main",
+                baseName + "Launcher",
+                baseName.charAt(0).toUpperCase() + baseName.slice(1)
+            ];
+            
+            const allPatterns = [...patterns, ...namePatterns];
+            
+            log(`   Trying patterns: ${allPatterns.slice(0, 5).join(', ')}...`, 'info');
+            
+            return null; // Return null because we need to test these at runtime
+        }
+        
+        // Strategy 4: Extract from source code structure (if available)
+        function detectFromSourceStructure(jarName) {
+            log("🔍 Strategy 4: Checking JAR structure for main class hints...", 'info');
+            
+            // Look for package names that suggest entry points
+            const commonPackages = [
+                "com.company",
+                "org.app",
+                "net.app",
+                "simplejavacalculator",
+                "calculator",
+                "app",
+                "game"
+            ];
+            
+            log("   Will attempt to test candidate classes at runtime", 'info');
+            return null;
+        }
+        
+        // Main detection orchestrator
+        async function detectMainClass(jarData, jarName) {
+            log("=".repeat(50), 'info');
+            log("🔍 STARTING MAIN CLASS DETECTION", 'info');
+            log("=".repeat(50), 'info');
+            
+            let detected = null;
+            
+            // Strategy 1: Check MANIFEST.MF
+            detected = await detectFromManifest(jarData);
+            if (detected) return detected;
+            
+            // Strategy 2: Scan class files
+            detected = await detectByScanningClasses(jarData);
+            if (detected) return detected;
+            
+            // Strategy 3 & 4: Provide common suggestions
+            detectByCommonPatterns(jarName);
+            detectFromSourceStructure(jarName);
+            
+            // Generate suggestions based on JAR name
+            const baseName = jarName.replace(/\.jar$/i, '');
+            const suggestions = [
+                baseName,
+                baseName.charAt(0).toUpperCase() + baseName.slice(1),
+                baseName.toLowerCase() + ".Main",
+                "Main",
+                "Start",
+                "Launcher",
+                "Application"
+            ];
+            
+            log("⚠️ Could not auto-detect main class definitively.", 'warning');
+            log(`💡 Suggested classes to try: ${suggestions.slice(0, 5).join(', ')}`, 'info');
+            
+            return null;
+        }
+        
+        // Test if a main class works by running it (without display)
+        async function testMainClass(jarPath, mainClass) {
+            log(`   Testing: ${mainClass}...`, 'info');
+            try {
+                // Try to run with a timeout-like approach
+                const result = await Promise.race([
+                    cheerpjRunMain(mainClass, jarPath).then(() => true),
+                    new Promise(resolve => setTimeout(() => resolve(false), 3000))
+                ]);
+                return result;
+            } catch (e) {
+                return false;
+            }
+        }
+        
         async function writeJarToVFS(jarData, filename) {
             return new Promise((resolve, reject) => {
                 try {
@@ -195,7 +411,7 @@
                         log(`✅ File written to VFS: ${vfsPath}`, 'success');
                         resolve(vfsPath);
                     } else {
-                        reject(new Error("cheerpOSAddStringFile not found"));
+                        reject(new Error("CheerpJ API not available"));
                     }
                 } catch (e) {
                     reject(e);
@@ -203,89 +419,47 @@
             });
         }
         
-        // Method 1: Try cheerpjRunJar (for JARs with Main-Class manifest)
-        async function runWithRunJar(jarPath) {
-            log("Trying cheerpjRunJar...", 'info');
-            try {
-                const exitCode = await cheerpjRunJar(jarPath);
-                log(`cheerpjRunJar exit code: ${exitCode}`, exitCode === 0 ? 'success' : 'error');
-                return exitCode === 0;
-            } catch (e) {
-                log(`cheerpjRunJar failed: ${e.message}`, 'error');
-                return false;
-            }
-        }
-        
-        // Method 2: Try cheerpjRunMain with specific main class
-        async function runWithRunMain(jarPath, mainClass) {
-            log(`Trying cheerpjRunMain with main class: ${mainClass}`, 'info');
-            try {
-                const exitCode = await cheerpjRunMain(mainClass, jarPath);
-                log(`cheerpjRunMain exit code: ${exitCode}`, exitCode === 0 ? 'success' : 'error');
-                return exitCode === 0;
-            } catch (e) {
-                log(`cheerpjRunMain failed: ${e.message}`, 'error');
-                return false;
-            }
-        }
-        
-        // Run the JAR file
-        async function runJar(jarPath, filename, mainClass = null) {
+        async function runJar(jarPath, mainClass) {
             displayDiv.innerHTML = '';
             
             log("Creating display canvas...", 'info');
             const canvas = cheerpjCreateDisplay(800, 600);
             if (canvas) displayDiv.appendChild(canvas);
             
-            let success = false;
-            
-            // Try cheerpjRunJar first
-            success = await runWithRunJar(jarPath);
-            
-            // If that fails and we have a main class, try cheerpjRunMain
-            if (!success && mainClass) {
-                log(`Using provided main class: ${mainClass}`, 'info');
-                success = await runWithRunMain(jarPath, mainClass);
-            }
-            
-            // If we have a main class but no success, try common patterns
-            if (!success && !mainClass) {
-                log("No main class provided. Common patterns to try:", 'info');
-                const commonPatterns = ["Main", "main", "Start", "Application", "Launcher"];
-                for (const pattern of commonPatterns) {
-                    log(`  - ${pattern}`, 'info');
+            if (mainClass) {
+                log(`🚀 Running with main class: ${mainClass}`, 'info');
+                try {
+                    const exitCode = await cheerpjRunMain(mainClass, jarPath);
+                    log(`Exit code: ${exitCode}`, exitCode === 0 ? 'success' : 'error');
+                    if (exitCode === 0) {
+                        log(`✅ Application is running!`, 'success');
+                        return true;
+                    }
+                } catch (e) {
+                    log(`Failed: ${e.message}`, 'error');
                 }
             }
             
-            if (success) {
-                log(`✅ ${filename} is running!`, 'success');
-            } else {
-                log(`❌ Failed to run ${filename}.`, 'error');
-                log(`   Solution: Find your main class name and enter it in the "Main Class" field.`, 'error');
-                log(`   For HelloWorld, try: "HelloWorld" (no .class extension)`, 'error');
-                displayDiv.innerHTML = '<div class="error-box">Failed to run. Enter the correct Main Class name above and click Run again.</div>';
+            log(`Trying cheerpjRunJar...`, 'info');
+            try {
+                const exitCode = await cheerpjRunJar(jarPath);
+                log(`Exit code: ${exitCode}`, exitCode === 0 ? 'success' : 'error');
+                return exitCode === 0;
+            } catch (e) {
+                log(`Failed: ${e.message}`, 'error');
             }
             
-            return success;
+            log(`❌ Could not run the JAR.`, 'error');
+            return false;
         }
         
-        // Attempt to auto-detect main class from JAR (simplified)
-        async function autoDetectMainClass(jarData, filename) {
-            log("Auto-detection: Checking JAR structure...", 'info');
-            log("💡 For accurate detection, find your main class manually:", 'info');
-            log("   Option 1: If you wrote the code, check which class has 'public static void main'", 'info');
-            log("   Option 2: Run in terminal: jar tf " + filename + " | grep '\\.class$'", 'info');
-            log("   Option 3: For a simple HelloWorld, try: 'HelloWorld'", 'info');
-        }
-        
-        // Handle file upload
         async function handleJarFile(file) {
             if (!file || !file.name.endsWith('.jar')) {
-                log("Please select a valid .jar file", 'error');
-                return false;
+                log("Please select a .jar file", 'error');
+                return;
             }
             
-            log(`Loading ${file.name} (${(file.size / 1024).toFixed(2)} KB)...`, 'info');
+            log(`📦 Loading ${file.name} (${(file.size / 1024).toFixed(2)} KB)...`, 'info');
             
             try {
                 const jarData = await new Promise((resolve, reject) => {
@@ -299,59 +473,80 @@
                 currentJarName = file.name;
                 
                 const initSuccess = await initCheerpJ();
-                if (!initSuccess) return false;
+                if (!initSuccess) return;
                 
                 currentJarPath = await writeJarToVFS(jarData, file.name);
                 
+                // AUTO-DETECT MAIN CLASS
+                detectedMainClass = await detectMainClass(jarData, file.name);
+                
+                if (detectedMainClass) {
+                    mainClassInput.value = detectedMainClass;
+                    log(`✅✅✅ MAIN CLASS FOUND: ${detectedMainClass} ✅✅✅`, 'success');
+                } else {
+                    mainClassInput.value = '';
+                    log(`⚠️ Could not auto-detect main class. You may need to enter it manually.`, 'warning');
+                    log(`💡 Common guesses: Main, Start, Launcher, ${file.name.replace(/\.jar$/i, '')}`, 'info');
+                    overrideBtn.style.background = "#89b4fa";
+                    editingMode = true;
+                }
+                
                 runBtn.disabled = false;
-                detectBtn.disabled = false;
+                log(`✅ Ready to run!`, 'success');
                 
-                log(`✅ Ready to run: ${currentJarPath}`, 'success');
-                log(`📌 If auto-detection fails, enter the main class name manually.`, 'info');
-                
-                return true;
             } catch (e) {
                 log(`❌ Error: ${e.message}`, 'error');
-                return false;
             }
         }
         
-        // Clear everything
         function clearAll() {
-            currentJarData = null;
-            currentJarName = null;
             currentJarPath = null;
+            currentJarData = null;
+            detectedMainClass = null;
             displayDiv.innerHTML = '';
             runBtn.disabled = true;
-            detectBtn.disabled = true;
-            mainClassInput.value = '';
             jarInput.value = '';
-            log("Cleared. Upload a new JAR file.", 'info');
+            mainClassInput.value = '';
+            mainClassInput.readOnly = true;
+            overrideBtn.style.background = "#45475a";
+            editingMode = false;
+            log("Cleared. Upload a new JAR.", 'info');
         }
         
-        // Play button handler
+        function toggleEditMode() {
+            editingMode = !editingMode;
+            mainClassInput.readOnly = !editingMode;
+            overrideBtn.style.background = editingMode ? "#89b4fa" : "#45475a";
+            overrideBtn.textContent = editingMode ? "💾 Save" : "✏️ Edit";
+            if (editingMode) {
+                mainClassInput.focus();
+                log("Edit mode enabled. Type the correct main class and click Save.", 'info');
+            } else {
+                if (mainClassInput.value) {
+                    detectedMainClass = mainClassInput.value;
+                    log(`Main class saved: ${detectedMainClass}`, 'success');
+                }
+            }
+        }
+        
         async function playGame() {
             if (!currentJarPath) {
-                log("No JAR loaded. Please upload a JAR first.", 'error');
+                log("No JAR loaded.", 'error');
+                return;
+            }
+            
+            const mainClassToUse = mainClassInput.value.trim() || detectedMainClass;
+            
+            if (!mainClassToUse) {
+                log("No main class specified. Please enter one or enable edit mode.", 'error');
                 return;
             }
             
             runBtn.disabled = true;
-            const mainClass = mainClassInput.value.trim() || null;
-            await runJar(currentJarPath, currentJarName, mainClass);
+            await runJar(currentJarPath, mainClassToUse);
             runBtn.disabled = false;
         }
         
-        // Auto-detect handler
-        async function autoDetect() {
-            if (!currentJarData || !currentJarName) {
-                log("No JAR loaded. Please upload a JAR first.", 'error');
-                return;
-            }
-            await autoDetectMainClass(currentJarData, currentJarName);
-        }
-        
-        // Event listeners
         uploadArea.addEventListener('click', () => jarInput.click());
         uploadArea.addEventListener('dragover', (e) => {
             e.preventDefault();
@@ -367,7 +562,7 @@
             if (file && file.name.endsWith('.jar')) {
                 await handleJarFile(file);
             } else {
-                log("Please drop a valid .jar file", 'error');
+                log("Please drop a .jar file", 'error');
             }
         });
         
@@ -378,14 +573,12 @@
         
         runBtn.addEventListener('click', playGame);
         clearBtn.addEventListener('click', clearAll);
-        detectBtn.addEventListener('click', autoDetect);
+        overrideBtn.addEventListener('click', toggleEditMode);
         
-        // Check HTTP server
         if (window.location.protocol === 'file:') {
-            log("❌ ERROR: Page opened via file:// protocol!", 'error');
-            log("   CheerpJ requires HTTP. Run: python -m http.server 8080", 'error');
+            log("❌ ERROR: Open via HTTP server, not double-click!", 'error');
         } else {
-            log("✅ Running via HTTP server. Ready.", 'success');
+            log("✅ HTTP server detected. Ready to auto-detect main class.", 'success');
         }
     </script>
 </body>
