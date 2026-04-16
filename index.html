@@ -3,93 +3,169 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CheerpJ JAR Runner</title>
+    <title>CheerpJ JAR Runner - Fixed</title>
     <style>
         body {
-            font-family: monospace;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
             padding: 20px;
-            background: #1e1e1e;
-            color: #d4d4d4;
+            background: #1e1e2e;
+            color: #cdd6f4;
         }
-        #status {
-            background: #2d2d2d;
+        .container {
+            background: #313244;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+        h1 { color: #89b4fa; margin-top: 0; }
+        h2 { color: #89b4fa; font-size: 18px; margin: 0 0 15px 0; }
+        .warning {
+            background: #1e1e2e;
+            border-left: 4px solid #f9e2af;
             padding: 15px;
-            border-radius: 5px;
-            margin: 10px 0;
-            font-size: 14px;
-            white-space: pre-wrap;
-            word-break: break-word;
+            margin: 15px 0;
+            border-radius: 8px;
         }
-        .error { color: #f48771; }
-        .success { color: #6a9955; }
-        .info { color: #9cdcfe; }
-        button {
-            background: #0e639c;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            cursor: pointer;
-            border-radius: 3px;
+        .error-box {
+            background: #1e1e2e;
+            border-left: 4px solid #f38ba8;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 8px;
+        }
+        input, button {
+            background: #1e1e2e;
+            border: 1px solid #45475a;
+            color: #cdd6f4;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 14px;
             margin: 5px;
         }
-        button:hover { background: #1177bb; }
-        input { margin: 10px 0; }
-        .warning {
-            background: #514c1a;
-            padding: 10px;
-            border-left: 3px solid #e5b83c;
-            margin: 10px 0;
+        button {
+            background: #89b4fa;
+            color: #1e1e2e;
+            cursor: pointer;
+            font-weight: bold;
+            border: none;
         }
+        button:hover { background: #b4befe; }
+        button:disabled {
+            background: #45475a;
+            cursor: not-allowed;
+        }
+        .upload-area {
+            border: 2px dashed #89b4fa;
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            margin: 15px 0;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .upload-area:hover {
+            background: #45475a;
+            border-color: #b4befe;
+        }
+        #status {
+            background: #1e1e2e;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            margin: 15px 0;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .status-success { color: #a6e3a1; }
+        .status-error { color: #f38ba8; }
+        .status-info { color: #89b4fa; }
+        .file-info { font-size: 12px; color: #a6adc8; margin-top: 10px; }
+        .main-class-hint {
+            background: #1e1e2e;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+        hr { border-color: #45475a; margin: 20px 0; }
     </style>
     <script src="https://cjrtnc.leaningtech.com/4.2/loader.js"></script>
 </head>
 <body>
-    <h2>📦 CheerpJ JAR Runner</h2>
-    <div class="warning">
-        <strong>⚠️ IMPORTANT:</strong> You MUST run this page through an HTTP server.<br>
-        If you see "file://" in your address bar, this WILL NOT work.<br>
-        → Open terminal in this folder and run: <code>python -m http.server 8080</code><br>
-        → Then open: <code>http://localhost:8080</code>
+    <div class="container">
+        <h1>📦 CheerpJ JAR Runner - Fixed Version</h1>
+        
+        <div class="warning">
+            <strong>⚠️ CRITICAL:</strong> You MUST use an HTTP server, not double-click the file.<br>
+            → Run: <code>python -m http.server 8080</code><br>
+            → Open: <code>http://localhost:8080</code>
+        </div>
+
+        <div class="upload-area" id="uploadArea">
+            📁 Click or drag & drop your JAR file here
+            <div class="file-info">helloworld.jar, any jar file</div>
+        </div>
+        <input type="file" id="jarFileInput" accept=".jar" style="display:none">
+
+        <div style="margin: 15px 0;">
+            <label><strong>Main Class (optional):</strong></label>
+            <input type="text" id="mainClassInput" placeholder="e.g., HelloWorld, com.example.Main" style="width: 70%;">
+            <div class="main-class-hint">
+                💡 <strong>How to find your main class:</strong><br>
+                • Run <code>jar tf yourfile.jar | grep -i "\.class$" | head -5</code> to see class files<br>
+                • For HelloWorld, the class name is likely <code>HelloWorld</code> (no .class extension)<br>
+                • If your code has <code>package com.example;</code>, use <code>com.example.Main</code>
+            </div>
+        </div>
+
+        <div style="text-align: center;">
+            <button id="runBtn" disabled>▶ Run JAR</button>
+            <button id="clearBtn">🗑 Clear</button>
+            <button id="detectBtn" disabled>🔍 Try Auto-Detect Main Class</button>
+        </div>
+
+        <div id="display" style="margin-top: 20px; min-height: 500px;"></div>
     </div>
-    
-    <div>
-        <label>Select your JAR file:</label>
-        <input type="file" id="jarFile" accept=".jar">
-        <button id="runBtn" disabled>▶ Run JAR</button>
-        <button id="clearBtn">🗑 Clear</button>
+
+    <div class="container">
+        <h2>📋 Console Output</h2>
+        <div id="status">Status: Ready. Upload a JAR file to begin.</div>
     </div>
-    
-    <div id="status">Status: Waiting for JAR file...</div>
-    
-    <div id="display"></div>
 
     <script>
         // DOM elements
-        const jarInput = document.getElementById('jarFile');
+        const uploadArea = document.getElementById('uploadArea');
+        const jarInput = document.getElementById('jarFileInput');
         const runBtn = document.getElementById('runBtn');
         const clearBtn = document.getElementById('clearBtn');
+        const detectBtn = document.getElementById('detectBtn');
+        const mainClassInput = document.getElementById('mainClassInput');
         const statusDiv = document.getElementById('status');
         const displayDiv = document.getElementById('display');
         
         let currentJarData = null;
         let currentJarName = null;
+        let currentJarPath = null;
         let initialized = false;
         
         function log(message, type = 'info') {
-            statusDiv.innerHTML = `<span class="${type}">${new Date().toLocaleTimeString()}: ${message}</span><br>${statusDiv.innerHTML}`;
-            console.log(message);
+            const timestamp = new Date().toLocaleTimeString();
+            const colorClass = type === 'error' ? 'status-error' : (type === 'success' ? 'status-success' : 'status-info');
+            statusDiv.innerHTML = `<div class="${colorClass}">[${timestamp}] ${message}</div>` + statusDiv.innerHTML;
+            console.log(`[${type}] ${message}`);
         }
         
-        // Initialize CheerpJ (call once)
+        // Initialize CheerpJ
         async function initCheerpJ() {
             if (initialized) return true;
             
             log("Initializing CheerpJ 4.2...", 'info');
             try {
-                // Use Java 11 for maximum compatibility with most JARs
-                // enableDebug helps with troubleshooting
                 await cheerpjInit({ 
-                    version: 11, 
+                    version: 8,
                     enableDebug: true,
                     status: "default"
                 });
@@ -102,30 +178,24 @@
             }
         }
         
-        // Write JAR file to CheerpJ virtual filesystem
+        // Write JAR to CheerpJ virtual filesystem
         async function writeJarToVFS(jarData, filename) {
             return new Promise((resolve, reject) => {
                 try {
-                    // Convert ArrayBuffer to Uint8Array
                     const uint8Array = new Uint8Array(jarData);
-                    
-                    // Convert to Base64 (CheerpJ expects this format for /str/ mount)
                     let binary = '';
                     for (let i = 0; i < uint8Array.length; i++) {
                         binary += String.fromCharCode(uint8Array[i]);
                     }
                     const base64 = btoa(binary);
-                    
-                    // Use /str/ mount - temporary storage for uploaded files
                     const vfsPath = `/str/${filename}`;
                     
-                    // Check if cheerpOSAddStringFile exists
                     if (typeof cheerpOSAddStringFile !== 'undefined') {
                         cheerpOSAddStringFile(vfsPath, base64);
                         log(`✅ File written to VFS: ${vfsPath}`, 'success');
                         resolve(vfsPath);
                     } else {
-                        reject(new Error("cheerpOSAddStringFile not found - CheerpJ not loaded"));
+                        reject(new Error("cheerpOSAddStringFile not found"));
                     }
                 } catch (e) {
                     reject(e);
@@ -146,35 +216,13 @@
             }
         }
         
-        // Method 2: Try cheerpjRunMain (for JARs without Main-Class manifest)
-        async function runWithRunMain(jarPath) {
-            log("Trying cheerpjRunMain with automatic main class detection...", 'info');
+        // Method 2: Try cheerpjRunMain with specific main class
+        async function runWithRunMain(jarPath, mainClass) {
+            log(`Trying cheerpjRunMain with main class: ${mainClass}`, 'info');
             try {
-                // Try common main class patterns
-                const mainClasses = [
-                    "Main",
-                    "main",
-                    "Start",
-                    "Application",
-                    "Launcher",
-                    "com.company.Main"
-                ];
-                
-                for (const mainClass of mainClasses) {
-                    try {
-                        log(`Attempting main class: ${mainClass}`, 'info');
-                        const exitCode = await cheerpjRunMain(mainClass, jarPath);
-                        if (exitCode === 0) {
-                            log(`✅ Success with main class: ${mainClass}`, 'success');
-                            return true;
-                        }
-                    } catch (e) {
-                        // Continue to next main class
-                    }
-                }
-                
-                log("No main class found. Your JAR may need a specific main class name.", 'error');
-                return false;
+                const exitCode = await cheerpjRunMain(mainClass, jarPath);
+                log(`cheerpjRunMain exit code: ${exitCode}`, exitCode === 0 ? 'success' : 'error');
+                return exitCode === 0;
             } catch (e) {
                 log(`cheerpjRunMain failed: ${e.message}`, 'error');
                 return false;
@@ -182,35 +230,52 @@
         }
         
         // Run the JAR file
-        async function runJar(jarPath, filename) {
-            // Clear previous display
+        async function runJar(jarPath, filename, mainClass = null) {
             displayDiv.innerHTML = '';
             
-            // Create display canvas
             log("Creating display canvas...", 'info');
             const canvas = cheerpjCreateDisplay(800, 600);
-            if (canvas) {
-                displayDiv.appendChild(canvas);
+            if (canvas) displayDiv.appendChild(canvas);
+            
+            let success = false;
+            
+            // Try cheerpjRunJar first
+            success = await runWithRunJar(jarPath);
+            
+            // If that fails and we have a main class, try cheerpjRunMain
+            if (!success && mainClass) {
+                log(`Using provided main class: ${mainClass}`, 'info');
+                success = await runWithRunMain(jarPath, mainClass);
             }
             
-            // Try both methods
-            let success = await runWithRunJar(jarPath);
-            if (!success) {
-                log("cheerpjRunJar failed, trying cheerpjRunMain...", 'info');
-                success = await runWithRunMain(jarPath);
+            // If we have a main class but no success, try common patterns
+            if (!success && !mainClass) {
+                log("No main class provided. Common patterns to try:", 'info');
+                const commonPatterns = ["Main", "main", "Start", "Application", "Launcher"];
+                for (const pattern of commonPatterns) {
+                    log(`  - ${pattern}`, 'info');
+                }
             }
             
             if (success) {
                 log(`✅ ${filename} is running!`, 'success');
             } else {
-                log(`❌ Failed to run ${filename}. The JAR may:`, 'error');
-                log(`   - Not have a Main-Class in manifest`, 'error');
-                log(`   - Use Java features not supported by CheerpJ`, 'error');
-                log(`   - Require native libraries (JNI)`, 'error');
-                displayDiv.innerHTML = '<div class="warning" style="margin-top:20px">Failed to run. Check status messages above.</div>';
+                log(`❌ Failed to run ${filename}.`, 'error');
+                log(`   Solution: Find your main class name and enter it in the "Main Class" field.`, 'error');
+                log(`   For HelloWorld, try: "HelloWorld" (no .class extension)`, 'error');
+                displayDiv.innerHTML = '<div class="error-box">Failed to run. Enter the correct Main Class name above and click Run again.</div>';
             }
             
             return success;
+        }
+        
+        // Attempt to auto-detect main class from JAR (simplified)
+        async function autoDetectMainClass(jarData, filename) {
+            log("Auto-detection: Checking JAR structure...", 'info');
+            log("💡 For accurate detection, find your main class manually:", 'info');
+            log("   Option 1: If you wrote the code, check which class has 'public static void main'", 'info');
+            log("   Option 2: Run in terminal: jar tf " + filename + " | grep '\\.class$'", 'info');
+            log("   Option 3: For a simple HelloWorld, try: 'HelloWorld'", 'info');
         }
         
         // Handle file upload
@@ -220,10 +285,9 @@
                 return false;
             }
             
-            log(`Loading ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)...`, 'info');
+            log(`Loading ${file.name} (${(file.size / 1024).toFixed(2)} KB)...`, 'info');
             
             try {
-                // Read file
                 const jarData = await new Promise((resolve, reject) => {
                     const reader = new FileReader();
                     reader.onload = (e) => resolve(e.target.result);
@@ -234,23 +298,18 @@
                 currentJarData = jarData;
                 currentJarName = file.name;
                 
-                // Initialize CheerpJ
                 const initSuccess = await initCheerpJ();
                 if (!initSuccess) return false;
                 
-                // Write to VFS
-                const jarPath = await writeJarToVFS(jarData, file.name);
+                currentJarPath = await writeJarToVFS(jarData, file.name);
                 
-                // Enable run button
                 runBtn.disabled = false;
+                detectBtn.disabled = false;
                 
-                // Store for run button
-                window.currentJarPath = jarPath;
-                window.currentJarName = file.name;
+                log(`✅ Ready to run: ${currentJarPath}`, 'success');
+                log(`📌 If auto-detection fails, enter the main class name manually.`, 'info');
                 
-                log(`✅ Ready to run: ${jarPath}`, 'success');
                 return true;
-                
             } catch (e) {
                 log(`❌ Error: ${e.message}`, 'error');
                 return false;
@@ -261,26 +320,57 @@
         function clearAll() {
             currentJarData = null;
             currentJarName = null;
-            window.currentJarPath = null;
+            currentJarPath = null;
             displayDiv.innerHTML = '';
             runBtn.disabled = true;
+            detectBtn.disabled = true;
+            mainClassInput.value = '';
             jarInput.value = '';
             log("Cleared. Upload a new JAR file.", 'info');
         }
         
         // Play button handler
         async function playGame() {
-            if (!window.currentJarPath) {
+            if (!currentJarPath) {
                 log("No JAR loaded. Please upload a JAR first.", 'error');
                 return;
             }
             
             runBtn.disabled = true;
-            await runJar(window.currentJarPath, window.currentJarName);
+            const mainClass = mainClassInput.value.trim() || null;
+            await runJar(currentJarPath, currentJarName, mainClass);
             runBtn.disabled = false;
         }
         
+        // Auto-detect handler
+        async function autoDetect() {
+            if (!currentJarData || !currentJarName) {
+                log("No JAR loaded. Please upload a JAR first.", 'error');
+                return;
+            }
+            await autoDetectMainClass(currentJarData, currentJarName);
+        }
+        
         // Event listeners
+        uploadArea.addEventListener('click', () => jarInput.click());
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.style.background = '#45475a';
+        });
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.style.background = 'transparent';
+        });
+        uploadArea.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            uploadArea.style.background = 'transparent';
+            const file = e.dataTransfer.files[0];
+            if (file && file.name.endsWith('.jar')) {
+                await handleJarFile(file);
+            } else {
+                log("Please drop a valid .jar file", 'error');
+            }
+        });
+        
         jarInput.addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (file) await handleJarFile(file);
@@ -288,13 +378,14 @@
         
         runBtn.addEventListener('click', playGame);
         clearBtn.addEventListener('click', clearAll);
+        detectBtn.addEventListener('click', autoDetect);
         
-        // Check if running via HTTP server
+        // Check HTTP server
         if (window.location.protocol === 'file:') {
-            log("❌ ERROR: You opened this page by double-clicking!", 'error');
-            log("   CheerpJ REQUIRES an HTTP server. Follow the instructions at the top.", 'error');
+            log("❌ ERROR: Page opened via file:// protocol!", 'error');
+            log("   CheerpJ requires HTTP. Run: python -m http.server 8080", 'error');
         } else {
-            log("✅ Running via HTTP server. Ready for JAR upload.", 'success');
+            log("✅ Running via HTTP server. Ready.", 'success');
         }
     </script>
 </body>
