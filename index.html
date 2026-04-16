@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Minecraft in Browser - CheerpJ 4.2</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #e0e0e0;
+        }
+        .container {
+            background: #2d2d2d;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #5a9c4e;
+            margin-top: 0;
+        }
+        .upload-area {
+            border: 2px dashed #5a9c4e;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            margin: 20px 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #1e1e1e;
+        }
+        .upload-area:hover {
+            border-color: #7cb86c;
+            background: #252525;
+        }
+        input[type="file"] {
+            display: none;
+        }
+        button {
+            background: #5a9c4e;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+            transition: background 0.2s;
+        }
+        button:hover:not(:disabled) {
+            background: #4a8a3e;
+        }
+        button:disabled {
+            background: #555;
+            cursor: not-allowed;
+        }
+        #status {
+            margin: 15px 0;
+            padding: 10px;
+            border-radius: 6px;
+            background: #1e1e1e;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .status-error {
+            color: #f08080;
+        }
+        .status-success {
+            color: #7cb86c;
+        }
+        .status-info {
+            color: #5a9c4e;
+        }
+        .info {
+            background: #252525;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+            font-size: 14px;
+            border-left: 3px solid #5a9c4e;
+        }
+        .warning {
+            border-left-color: #f0a020;
+            background: #2a2518;
+        }
+        #gameContainer {
+            margin-top: 20px;
+            min-height: 500px;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #000;
+        }
+        hr {
+            border-color: #3d3d3d;
+            margin: 20px 0;
+        }
+        .file-info {
+            font-size: 12px;
+            color: #aaa;
+            word-break: break-all;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: #3d3d3d;
+            border-radius: 2px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .progress-fill {
+            width: 0%;
+            height: 100%;
+            background: #5a9c4e;
+            transition: width 0.3s;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>🎮 Minecraft in Browser</h1>
+    <p>Upload your Minecraft Java Edition JAR file to play directly in your browser using CheerpJ 4.2.</p>
+    
+    <div class="info">
+        <strong>📋 How it works:</strong><br>
+        1. Upload your Minecraft client JAR file (from <code>.minecraft/versions/&lt;version&gt;/&lt;version&gt;.jar</code>)<br>
+        2. CheerpJ runs the JAR natively in your browser using WebAssembly<br>
+        3. The game runs on YOUR computer - no servers or VMs involved
+    </div>
+    
+    <div class="info warning">
+        <strong>⚠️ Important Notes:</strong><br>
+        • You must own a legitimate copy of Minecraft to use your JAR file<br>
+        • You MUST serve this page via an HTTP server (Python: <code>python -m http.server 8080</code>)<br>
+        • Large JAR files (100MB+) may take time to load<br>
+        • Minecraft 1.19+ requires Java 17 support (partial in CheerpJ 4.2)
+    </div>
+    
+    <div class="upload-area" id="uploadArea">
+        <div>📁 Click or drag & drop your Minecraft JAR file here</div>
+        <div class="file-info" style="margin-top: 10px;">minecraft_client.jar</div>
+    </div>
+    <input type="file" id="jarFileInput" accept=".jar">
+    
+    <div style="text-align: center;">
+        <button id="playBtn" disabled>▶ Play Minecraft</button>
+        <button id="clearBtn" disabled>🗑 Clear JAR</button>
+    </div>
+    
+    <div class="progress-bar" id="progressBar" style="display: none;">
+        <div class="progress-fill" id="progressFill"></div>
+    </div>
+    
+    <div id="status">Status: Ready. Upload a JAR file to begin.</div>
+    
+    <hr>
+    
+    <div id="gameContainer"></div>
+</div>
+
+<!-- Load CheerpJ 4.2 loader -->
+<script src="https://cjrtnc.leaningtech.com/4.2/loader.js"></script>
+
+<script>
+    // Global variables
+    let cheerpjInitialized = false;
+    let currentGameRunning = false;
+    let currentJarData = null;
+    let currentJarName = null;
+    
+    // DOM elements
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('jarFileInput');
+    const playBtn = document.getElementById('playBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const statusDiv = document.getElementById('status');
+    const gameContainer = document.getElementById('gameContainer');
+    const progressBar = document.getElementById('progressBar');
+    const progressFill = document.getElementById('progressFill');
+    
+    // Helper: Update status with color coding
+    function updateStatus(message, type = 'info') {
+        statusDiv.innerHTML = message;
+        statusDiv.className = type === 'error' ? 'status-error' : (type === 'success' ? 'status-success' : 'status-info');
+        console.log(`[${type.toUpperCase()}] ${message}`);
+    }
+    
+    // Helper: Update progress bar
+    function updateProgress(percent) {
+        if (percent > 0 && percent < 100) {
+            progressBar.style.display = 'block';
+            progressFill.style.width = percent + '%';
+        } else {
+            progressBar.style.display = 'none';
+            progressFill.style.width = '0%';
+        }
+    }
+    
+    // Helper: Load file as ArrayBuffer with progress
+    function loadFileAsArrayBuffer(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target.result);
+            reader.onerror = (e) => reject(e.target.error);
+            
+            // Track progress for large files
+            reader.onprogress = (e) => {
+                if (e.lengthComputable) {
+                    const percent = (e.loaded / e.total) * 100;
+                    updateProgress(percent);
+                }
+            };
+            
+            reader.readAsArrayBuffer(file);
+        });
+    }
+    
+    // Initialize CheerpJ with better error handling
+    async function initCheerpJ() {
+        if (cheerpjInitialized) return true;
+        
+        updateStatus("Initializing CheerpJ runtime (this may take 10-20 seconds)...", 'info');
+        updateProgress(10);
+        
+        try {
+            // CRITICAL FIX: Specify Java version explicitly
+            // For Minecraft 1.18+, Java 17 is required
+            // For older versions, use version: 8
+            await cheerpjInit({ 
+                version: 17,  // Java 17 for Minecraft 1.19+
+                status: "default"
+            });
+            
+            cheerpjInitialized = true;
+            updateProgress(100);
+            updateStatus("✓ CheerpJ initialized successfully!", 'success');
+            setTimeout(() => updateProgress(0), 1000);
+            return true;
+            
+        } catch (error) {
+            console.error("CheerpJ initialization error:", error);
+            
+            // Try fallback to Java 8 if Java 17 fails
+            updateStatus("Java 17 initialization failed, trying Java 8 fallback...", 'info');
+            
+            try {
+                await cheerpjInit({ 
+                    version: 8,
+                    status: "default"
+                });
+                cheerpjInitialized = true;
+                updateStatus("✓ CheerpJ initialized with Java 8 fallback", 'success');
+                return true;
+            } catch (fallbackError) {
+                console.error("Fallback also failed:", fallbackError);
+                updateStatus(`Failed to initialize CheerpJ: ${error.message || error}`, 'error');
+                return false;
+            }
+        }
+    }
+    
+    // Write JAR to CheerpJ's virtual filesystem
+    // FIXED: Properly handles the /app/ prefix that CheerpJ requires
+    async function writeJarToVFS(jarData, filename) {
+        return new Promise(async (resolve, reject) => {
+            try {
+                // CRITICAL: CheerpJ requires the /app/ prefix for files served from the web server
+                // But for uploaded files, we need to use a different approach
+                
+                // Method 1: Use CheerpJ's built-in file writing if available
+                if (typeof cheerpjOSWriteFile !== 'undefined') {
+                    updateStatus("Using cheerpjOSWriteFile...", 'info');
+                    const uint8Array = new Uint8Array(jarData);
+                    const success = cheerpjOSWriteFile(`/app/${filename}`, uint8Array);
+                    if (success) {
+                        resolve(`/app/${filename}`);
+                        return;
+                    }
+                }
+                
+                // Method 2: Use the /str/ mount for JavaScript-provided files
+                updateStatus("Writing JAR to virtual filesystem...", 'info');
+                
+                // Convert ArrayBuffer to Base64 (more reliable for CheerpJ)
+                const uint8Array = new Uint8Array(jarData);
+                let binary = '';
+                for (let i = 0; i < uint8Array.length; i++) {
+                    binary += String.fromCharCode(uint8Array[i]);
+                }
+                const base64 = btoa(binary);
+                
+                // Use the /str/ mount point (temporary storage for JavaScript-provided data)
+                const vfsPath = `/str/${filename}`;
+                
+                // Check if cheerpOSAddStringFile exists
+                if (typeof cheerpOSAddStringFile !== 'undefined') {
+                    cheerpOSAddStringFile(vfsPath, base64);
+                    updateStatus(`File written to ${vfsPath}`, 'success');
+                    resolve(vfsPath);
+                } else {
+                    // Fallback: try to use the newer CheerpJ API
+                    reject(new Error("No compatible CheerpJ file API found"));
+                }
+                
+            } catch (error) {
+                reject(error);
+            }
+        });
+    }
+    
+    // Run the JAR file
+    async function runJar(jarPath, filename) {
+        if (currentGameRunning) {
+            updateStatus("A game is already running. Clear it first.", 'error');
+            return false;
+        }
+        
+        updateStatus(`Starting ${filename}...`, 'info');
+        updateProgress(10);
+        
+        try {
+            // Clear previous content
+            gameContainer.innerHTML = '';
+            
+            // Create display canvas
+            // CRITICAL: Display must be created BEFORE running the JAR
+            const display = cheerpjCreateDisplay(854, 480);
+            gameContainer.appendChild(display);
+            
+            updateStatus(`Launching application from ${jarPath}...`, 'info');
+            updateProgress(30);
+            
+            // CRITICAL FIX: The path must be correct - CheerpJ expects /app/ prefix for JARs
+            // If using /str/, we need to handle it differently
+            let runPath = jarPath;
+            
+            // CheerpJ's cheerpjRunJar expects the JAR to be accessible
+            // For /str/ paths, they are accessible directly
+            const exitCode = await cheerpjRunJar(runPath);
+            
+            updateProgress(100);
+            currentGameRunning = true;
+            updateStatus(`✓ Application running! Exit code: ${exitCode}`, 'success');
+            setTimeout(() => updateProgress(0), 1000);
+            return true;
+            
+        } catch (error) {
+            console.error("Failed to run JAR:", error);
+            updateStatus(`Error running application: ${error.message || error}`, 'error');
+            
+            // Clean up display on error
+            gameContainer.innerHTML = '<div class="info warning" style="margin:20px;text-align:center;">Failed to start application. Check the console for details.</div>';
+            updateProgress(0);
+            return false;
+        }
+    }
+    
+    // Handle uploaded JAR file
+    async function handleJarFile(file) {
+        if (!file || !file.name.endsWith('.jar')) {
+            updateStatus("Please select a valid .jar file", 'error');
+            return false;
+        }
+        
+        const fileSizeMB = (file.size / 1024 / 1024).toFixed(2);
+        updateStatus(`Loading ${file.name} (${fileSizeMB} MB)...`, 'info');
+        updateProgress(5);
+        
+        try {
+            // Load file data
+            const jarData = await loadFileAsArrayBuffer(file);
+            currentJarData = jarData;
+            currentJarName = file.name;
+            
+            updateStatus(`Loaded: ${file.name}. Initializing CheerpJ...`, 'info');
+            updateProgress(20);
+            
+            // Initialize CheerpJ
+            const initSuccess = await initCheerpJ();
+            if (!initSuccess) {
+                return false;
+            }
+            
+            updateStatus(`Writing ${file.name} to virtual filesystem...`, 'info');
+            updateProgress(40);
+            
+            // Write JAR to VFS
+            const jarPath = await writeJarToVFS(jarData, file.name);
+            
+            updateStatus(`✓ Ready to play! JAR at: ${jarPath}`, 'success');
+            updateProgress(100);
+            setTimeout(() => updateProgress(0), 500);
+            
+            // Enable buttons
+            playBtn.disabled = false;
+            clearBtn.disabled = false;
+            
+            // Store path for play button
+            window.currentJarPath = jarPath;
+            window.currentJarName = file.name;
+            
+            return true;
+            
+        } catch (error) {
+            console.error("Upload error:", error);
+            updateStatus(`Error: ${error.message}`, 'error');
+            updateProgress(0);
+            return false;
+        }
+    }
+    
+    // Play the game
+    async function playGame() {
+        if (!window.currentJarPath) {
+            updateStatus("No JAR loaded. Please upload a JAR first.", 'error');
+            return;
+        }
+        
+        // Disable play button during launch to prevent multiple attempts
+        playBtn.disabled = true;
+        
+        const success = await runJar(window.currentJarPath, window.currentJarName);
+        
+        if (!success) {
+            playBtn.disabled = false;
+        }
+    }
+    
+    // Clear everything
+    function clearGame() {
+        if (currentGameRunning) {
+            gameContainer.innerHTML = '';
+            currentGameRunning = false;
+        }
+        
+        currentJarData = null;
+        currentJarName = null;
+        window.currentJarPath = null;
+        playBtn.disabled = true;
+        clearBtn.disabled = true;
+        updateStatus("Cleared. Upload a new JAR file to play.", 'info');
+        updateProgress(0);
+    }
+    
+    // Event listeners for file upload
+    uploadArea.addEventListener('click', () => fileInput.click());
+    uploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadArea.style.borderColor = '#7cb86c';
+    });
+    uploadArea.addEventListener('dragleave', () => {
+        uploadArea.style.borderColor = '#5a9c4e';
+    });
+    uploadArea.addEventListener('drop', async (e) => {
+        e.preventDefault();
+        uploadArea.style.borderColor = '#5a9c4e';
+        const file = e.dataTransfer.files[0];
+        if (file && file.name.endsWith('.jar')) {
+            await handleJarFile(file);
+        } else {
+            updateStatus("Please drop a valid .jar file", 'error');
+        }
+    });
+    
+    fileInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            await handleJarFile(file);
+        }
+    });
+    
+    playBtn.addEventListener('click', playGame);
+    clearBtn.addEventListener('click', clearGame);
+    
+    // Check if running via HTTP server (not file:// protocol)
+    if (window.location.protocol === 'file:') {
+        updateStatus(
+            "⚠️ WARNING: You opened this page by double-clicking. CheerpJ requires an HTTP server.\n\n" +
+            "Please run: python -m http.server 8080\n" +
+            "Then open: http://localhost:8080/thisfile.html",
+            'error'
+        );
+    } else {
+        updateStatus("Ready. Upload your Minecraft JAR file to begin.", 'info');
+    }
+</script>
+</body>
+</html>
